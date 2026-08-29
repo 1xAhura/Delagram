@@ -1,3 +1,5 @@
-/target
+.venv/
+.ruff_cache/
 
 .env
+*.session
