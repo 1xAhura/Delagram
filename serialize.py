@@ -1,4 +1,4 @@
-def parse_record(raw: str | None) -> tuple[str, str] | None:
+def parse_message(raw: str | None) -> tuple[str, str] | None:
     if not raw:
         return None
     key, sep, value = raw.partition(": ")

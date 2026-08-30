@@ -6,7 +6,7 @@ import dotenv
 ENV_PATH = Path(__file__).with_name(".env")
 
 
-def init_config() -> dict[str, str]:
+def load() -> dict[str, str]:
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--api-id")
