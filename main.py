@@ -1,17 +1,33 @@
 from telethon import TelegramClient
 
 from config import init_config
+from storage import parse_record
 
 
-async def send_hello(bot: TelegramClient, channel_id: int) -> None:
-    msg = await bot.send_message(channel_id, "its from telethon")
-    print(msg.id)
+async def build_index(
+    client: TelegramClient, channel: int
+) -> dict[str, tuple[int, str]]:
+    index = {}
+    async for message in client.iter_messages(channel, reverse=True):
+        if message.action:
+            continue
+        if record := parse_record(message.raw_text):
+            key, value = record
+            index[key] = (message.id, value)
+    return index
+
+
+async def run(client: TelegramClient, channel_id: int) -> None:
+    index = await build_index(client, channel_id)
+    for key, (msg_id, value) in index.items():
+        print(f"    {key} -> id {msg_id}: {value}")
+    print(f"recovered {len(index)} keys")
 
 
 def main() -> None:
     config = init_config()
 
-    required = ("API_ID", "API_HASH", "BOT_TOKEN", "CHANNEL_ID")
+    required = ("API_ID", "API_HASH", "CHANNEL_ID")
     missing = [key for key in required if not config.get(key)]
     if missing:
         raise SystemExit(
@@ -21,13 +37,13 @@ def main() -> None:
 
     api_id = int(config["API_ID"])
     api_hash = config["API_HASH"]
-    bot_token = config["BOT_TOKEN"]
     channel_id = int(config["CHANNEL_ID"])
 
-    bot = TelegramClient("bot", api_id, api_hash).start(bot_token=bot_token)
+    client = TelegramClient("anon", api_id, api_hash).start()
+    client.parse_mode = None
 
-    with bot:
-        bot.loop.run_until_complete(send_hello(bot, channel_id))
+    with client:
+        client.loop.run_until_complete(run(client, channel_id))
 
 
 if __name__ == "__main__":
