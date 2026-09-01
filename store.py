@@ -1,3 +1,5 @@
+import json
+
 from serialize import parse_message
 
 
@@ -22,6 +24,10 @@ class TeleDB:
             if record := parse_message(message.raw_text):
                 key, value = record
                 self.records[key] = (message.id, value)
+
+    def export_index(self, path: str) -> None:
+        with open(path, "w") as f:
+            json.dump(self.records, f)
 
     async def get(self, key: str) -> str | None:
         entry = self.records.get(key)
