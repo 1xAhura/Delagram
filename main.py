@@ -24,7 +24,6 @@ async def lifespan(app: FastAPI):
 
     db = TeleDB(client, int(cfg["CHANNEL_ID"]))
     await db.build_index()
-    print(f"recovered {len(db.records)} keys")
 
     app.state.db = db
 

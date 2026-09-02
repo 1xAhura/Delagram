@@ -59,6 +59,6 @@ class TeleDB:
         async with self._lock:
             entry = self.records.get(key)
             if entry is None:
-                raise KeyError(f"key ({entry[1]}) not found")
+                raise KeyError(f"key ({key}) not found")
             await self.client.delete_messages(self.channel_id, entry[0])
             del self.records[key]
