@@ -14,7 +14,7 @@ def load() -> dict[str, str]:
     parser.add_argument("--bot-token")
     parser.add_argument("--channel-id")
 
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
 
     updates = {
         "API_ID": args.api_id,
