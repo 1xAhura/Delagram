@@ -1,3 +1,4 @@
+import asyncio
 import json
 
 from serialize import parse_message
@@ -15,6 +16,7 @@ class TeleDB:
         self.records: dict[str, tuple[int, str]] = (
             records if records is not None else {}
         )
+        self._lock = asyncio.Lock()
 
     async def build_index(self) -> None:
         self.records.clear()
@@ -29,7 +31,7 @@ class TeleDB:
         with open(path, "w") as f:
             json.dump(self.records, f)
 
-    async def get(self, key: str) -> str | None:
+    def get(self, key: str) -> str | None:
         entry = self.records.get(key)
         return entry[1] if entry else None
 
@@ -37,20 +39,26 @@ class TeleDB:
         key = key.strip()
         value = value.strip()
 
+        if not key or not value:
+            raise ValueError("key and value must be non-empty")
         if ":" in key:
-            raise ValueError(f"Key ({key}) cannot contain colon.")
+            raise ValueError(f"key ({key}) cannot contain colon.")
 
         text = f"{key}: {value}"
 
-        if entry := self.records.get(key):
-            message_id, _ = entry
-            await self.client.edit_message(self.channel_id, message_id, text)
-            self.records[key] = (message_id, value)
-        else:
-            message = await self.client.send_message(self.channel_id, text)
-            self.records[key] = (message.id, value)
+        async with self._lock:
+            if entry := self.records.get(key):
+                message_id, _ = entry
+                await self.client.edit_message(self.channel_id, message_id, text)
+                self.records[key] = (message_id, value)
+            else:
+                message = await self.client.send_message(self.channel_id, text)
+                self.records[key] = (message.id, value)
 
     async def delete(self, key: str) -> None:
-        message_id = self.records[key][0]
-        await self.client.delete_messages(self.channel_id, message_id)
-        del self.records[key]
+        async with self._lock:
+            entry = self.records.get(key)
+            if entry is None:
+                raise KeyError(f"key ({entry[1]}) not found")
+            await self.client.delete_messages(self.channel_id, entry[0])
+            del self.records[key]
