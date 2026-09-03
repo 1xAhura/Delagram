@@ -66,8 +66,8 @@ async def set_key(key: str, payload: SetRequest):
 async def delete_key(key: str):
     try:
         await app.state.db.delete(key)
-    except KeyError:
-        raise HTTPException(status_code=404, detail=f"key not found: {key}")
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
     return Response(status_code=204)
 
 
